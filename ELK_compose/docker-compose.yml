@@ -1,0 +1,58 @@
+version: "3.9"
+services:
+  elasticsearch:
+    image: elasticsearch:8.1.2
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - "discovery.type=single-node"
+      - "xpack.ml.enabled=false"
+      - "xpack.security.enabled=false"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2000M
+        reservations:
+          memory: 2000M
+  kibana:
+    image: kibana:8.1.2
+    ports:
+      - "5601:5601"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1000M
+        reservations:
+          memory: 1000M
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.44.0
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - elasticsearch
+  prometheus:
+    image: prom/prometheus:v2.35.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+    - cadvisor
+  grafana:
+    image: grafana/grafana:8.5.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+
